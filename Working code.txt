@@ -1,0 +1,652 @@
+﻿var count = 0;var node1,node2;var temparr = [[]];
+var i=0;x_browser = 20;y_browser = 5;
+var force = d3.layout.force()
+            .on("tick",tick);
+var tree = d3.layout.tree().size([1300, 570]);
+var baseSvg;
+var node,linktext,nodeEnter,images;
+var zoomListener = d3.behavior.zoom().scaleExtent([0.1, 3]).on("zoom", zoom);
+var globaldata;
+
+function calcorganizations(){
+    var organizations = [];
+  organizations.push(globaldata[0].type);
+  globaldata.forEach(function(d){
+    for(i=0;i<organizations.length;i++)
+    {
+      var flag = 1
+      if(d.type==organizations[i]){
+        flag= 0;
+        break;
+      }
+    }
+    if(flag == 1)
+    {
+      organizations.push(d.type);
+    }
+  })
+  return organizations;
+}
+/*-----------------------------------------------------------------------------------------*/
+function startx(){
+    count = 0, node1 = null; node2 = null;
+    d3.select("svg").remove();
+    d3.selectAll("select").remove();
+    d3.json("marvel.json", function(error, yolodata) {
+    globaldata=yolodata;
+
+    var arry = calcorganizations();
+    var select = d3.select("#searchselect")
+    .append("select")
+    .attr('id','searchInput');
+
+    select.append("option")
+        .attr("value", "Select")
+        .attr("selected", "true")
+        .text("Select");
+
+    globaldata.forEach(function(d) {
+
+    select.append("option")
+        .attr("value", d.name)
+        .text(d.name);
+
+    });
+
+  var select = d3.select("#singleaspectselect")
+      .append("select")
+      .attr('id','singleaspect');
+
+    select.append("option")
+      .attr("value", "Select")
+      .attr("selected", "true")
+      .text("Select");
+
+    arry.forEach(function(d) {
+
+      select.append("option")
+        .attr("value", d)
+        .text(d);
+
+    });
+    makechildren(yolodata,0);
+});
+}
+/*-----------------------------------------------------------------------------------------*/
+function makechildren(data,identifier) {
+    data.push({                           //Push main-node into position data[0] which will be hidden
+    name:"main-node",
+    parent:null,
+    type : "Organization",
+    });
+    var temp=data[data.length-1];
+    for(var i=data.length-2;i>=0;i--){
+        data[i+1]=data[i];
+    }
+    data[0]=temp;
+/*--------------------------*/
+    var found;
+    for(var i=0;i<data.length;i++)        //If node.parent doesnt exist, set parent node to main-node
+    {
+
+    for(var j=0;j<data.length;j++)
+        {
+        if(data[i].parent==data[j].name){
+            found=true;
+            break;}
+        else{
+        found=false;
+        }
+        }
+    if(!found)
+        {
+        if(data[i].name!="main-node"){
+            data[i].parent = "main-node";}
+        }
+    }
+/*--------------------------*/
+    var dataMap = data.reduce(function(map, node){   //Change data so each node is identified by node.name
+    map[node.name] = node;
+    return map;}, {},);
+    data.forEach(function(d) {
+      d.color = undefined;
+    })
+/*--------------------------*/
+    var treeData = [];                               //Create treeData with parent children format
+    var i=0;
+    data.forEach(function(node){
+    if(node.parent==null && node.name!="main-node")
+    {
+        node.parent = "main-node";
+        }
+    temparr[i] = new Array(node.parent,node.name);
+    i = i+1;
+    var parent = dataMap[node.parent];
+    if (parent) {
+        (parent.children || (parent.children = []))
+            .push(node);
+    } else {
+        treeData.push(node);
+    }
+/*--------------------------*/
+    if(node.type == "Organization")                 //Add images to nodes
+    {
+      node.img="https://cdn0.iconfinder.com/data/icons/project-management-flat-circular/128/8-512.png";
+      treeData.push(node);
+    }
+    else if(node.type == "Department")
+    {
+      node.img="https://artscimedia.case.edu/wp-content/uploads/sites/79/2017/10/20181806/briefcase-flat-vector-icon-e1508523524640.png";
+      treeData.push(node);
+    }
+    else if(node.type == "System")
+    {
+      node.img="https://www.freeiconspng.com/uploads/displaying-14-images-for--customer-service-icon-png-23.png";
+      treeData.push(node);
+    }
+    else if(node.type == "Service")
+    {
+      node.img="https://www.solarserviceguys.com.au/wp-content/uploads/2018/07/SSGUYS-Home-Icons-Solar-Service.png";
+      treeData.push(node);
+    }
+     else if(node.type == "API")
+    {
+      node.img="https://cdn2.iconfinder.com/data/icons/web-design-development-ui-vol-2-1/96/Api_app_coding_computer_development_settings_software-512.png";
+      treeData.push(node);
+    }
+     else if(node.type == "Port")
+    {
+      node.img="https://cdn1.iconfinder.com/data/icons/devices-circular-3/90/103-512.png";
+      treeData.push(node);
+    }
+     else if(node.type == "Path")
+    {
+      node.img="https://secure.webtoolhub.com/static/resources/icons/set51/54a1d706.png";
+      treeData.push(node);
+    }
+     else if(node.type == "Operation")
+    {
+      node.img="http://absstem.com/wp-content/uploads/2017/11/automatic-system-ICON.png";
+      treeData.push(node);
+    }
+     else if(node.type == "Parameter")
+    {
+      node.img="https://cdn4.iconfinder.com/data/icons/office-20/128/office-94-512.png";
+      treeData.push(node);
+    }
+    else if(node.type == "Request")
+    {
+      node.img="https://www.freeiconspng.com/uploads/blue-circle-png-5.png";
+      treeData.push(node);
+    }
+    else if(node.type == "Response")
+    {
+      node.img="https://cdn0.iconfinder.com/data/icons/basic-11/97/46-512.png";
+      treeData.push(node);
+    }
+    else if(node.type == "Method")
+    {
+      node.img="http://iconsetc.com/icons-watermarks/flat-circle-white-on-green-gradient/classica/classica_curly-bracket/classica_curly-bracket_flat-circle-white-on-green-gradient_512x512.png";
+      treeData.push(node);
+    }
+    });
+/*--------------------------*/
+    if(identifier==0)                               //Identifier for makegraph() and other return functions
+        makegraph(treeData);
+    else if (identifier==1)
+        return treeData;
+    }
+/*-----------------------------------------------------------------------------------------*/
+function makegraph(data){
+    //Create svg
+baseSvg = d3.select("#svgcontent").append("svg").on("contextmenu", function (d, i) {d3.event.preventDefault();})
+    .attr("width",2000)
+    .attr("height",670)
+    .style("background-color","#eee")
+    .call(zoomListener)
+    baseSvg = baseSvg.append("g");
+    root=data[0];
+    update(root);
+}
+/*-----------------------------------------------------------------------------------------*/
+function update(source) {
+    nodes = tree.nodes(root)                                         // Compute the new tree layout
+    links = tree.links(nodes);
+/*--------------------------*/
+    force.nodes(nodes)                                               // Force layout parameters
+    .links(links)
+    .gravity(0.05)
+    .charge(-5000)
+    .linkDistance(200)
+    .friction(0.3)
+    .linkStrength(function(l, i) {return 1; })
+    .size([1300, 570])
+    .start();
+/*--------------------------*/
+    node = baseSvg.selectAll(".node")                                     // Declare the nodes
+        .data(nodes, function(d) { return d.id || (d.id = ++i); });
+    link = baseSvg.selectAll(".link")                                     // Declare the paths
+        .data(links, function(d) {return d.target.id; });
+/*--------------------------*/
+    nodeEnter = node.enter().append("g")                                   // Enter the nodes.
+    .attr("class", function(d){
+    return 'node level-'+d.depth; // add the node depth
+    })
+    .attr("transform", function(d) {
+    return "translate(" + d.y + "," + d.x + ")"; })
+    .on("click", click)
+    .on("contextmenu",rightclick)
+    .on( 'mouseenter', function() {
+            // select element in current context
+            d3.select( this )
+              .transition()
+              .attr("transform",nodeTransform)
+              .attr("height", 100)
+              .attr("width", 100);
+          })
+          // set back
+          .on( 'mouseleave', function() {
+            d3.select( this )
+              .transition()
+              .attr("x", function(d) { return -25;})
+              .attr("y", function(d) { return -25;})
+              .attr("height", 50)
+              .attr("width", 50);
+          });
+    createObjects(nodeEnter);
+}
+/*-----------------------------------------------------------------------------------------*/
+function createObjects(nodeEnter){
+    nodeEnter.append("circle")                  //node properties
+        .attr("r", 10)
+        .style("fill", "white")
+/*--------------------------*/
+    images = nodeEnter.append("image","g")      //Image properties
+        .attr("class", "icon")
+        .attr("xlink:href",  function(d) { return d.img;})
+        .attr("x", function(d) { return -25;})
+        .attr("y", function(d) { return -25;})
+        .attr("height", 50)
+        .attr("width", 50)
+/*--------------------------*/
+    nodeEnter.append("text")                     //Nodetext properties
+        .attr("class", "nodetext")
+        .attr("x", x_browser)
+        .attr("y", y_browser +15)
+        .attr("fill", "black")
+        .text(function(d) { return d.name; });
+/*--------------------------*/
+    link.enter().insert("path","g")              // Declare the links
+        .attr("class", function(d){
+        return 'link level-' + d.source.depth})
+        .style("stroke", "grey")
+        .style("stroke-width",1)
+/*--------------------------*/
+    linktext = baseSvg.selectAll("g.linklabelholder").data(links);  //Declare linktext
+    linktext.enter().append("g").attr("class", "linklabelholder")   //Linktext properties
+        .append("text")
+        .attr("class", function(d){
+        return 'linktext level-' + d.source.depth})
+        .attr("dx", 1)
+        .attr("dy", ".35em")
+        .attr("text-anchor", "middle")
+        .text(function(d) { return d.target.type });
+}
+/*-----------------------------------------------------------------------------------------*/
+function tick(){
+        link.attr("d", function(d) {                            //Link changes
+        var dx = d.target.x - d.source.x,
+            dy = d.target.y - d.source.y,
+            //dr =  Math.sqrt(dx * dx + dy * dy);
+            dr = 0;
+                return   "M" + d.source.x + ","
+                + d.source.y
+                + "A" + dr + ","
+                + dr + " 0 0,1 "
+                + d.target.x + ","
+                + d.target.y;
+});
+    node.attr("transform", nodeTransform);                      //Node changes,call nodeTransform
+    linktext.attr("transform", function(d) {                    //Linktext changes
+    return "translate(" + (d.source.x + d.target.x) / 2 + ","
+    + (d.source.y + d.target.y) / 2 + ")"; });
+}
+/*-----------------------------------------------------------------------------------------*/
+function nodeTransform(d){
+
+    return "translate(" + d.x + "," + d.y + ")";
+}
+/*-----------------------------------------------------------------------------------------*/
+function click(){
+  if(this.selected != true)
+  {
+    if(count<2){
+    count ++;
+    d3.select(this)
+        this.selected = true;
+    var a=d3.select(this).data()[0];
+    if (count==1)
+    node1=a;
+    if (count==2)
+    node2=a;
+    d3.select(this).select("text").transition()
+        .duration(750)
+        .attr("x", 22)
+        .style("fill", "black")
+        .style("stroke", "steelblue")
+        .style("stroke-width", "1px")
+        .style("font", "50px sans-serif");
+    d3.select(this).select("circle").transition()
+        .duration(750)
+        .attr("r", 50)
+    }
+}
+}
+/*-----------------------------------------------------------------------------------------*/
+function rootpath(){
+    if(count==1){
+    node2 = d3.selectAll(".node").filter(function(d) { return d.name === "main-node" });
+    count = 2;
+    path();}
+}
+/*-----------------------------------------------------------------------------------------*/
+function neighbours(){
+    var neighbours=[];
+    neighbours.push(node1);
+    links.forEach(function(d){
+        if(d.source == node1){
+        d.target.neighbour = true;
+        neighbours.push(d.target);
+        }
+        console.log(neighbours[0]);
+    neighbours[0].neighbour=true;
+    })
+    neighbourRestroke();
+}
+/*-----------------------------------------------------------------------------------------*/
+function restroke(id,common){
+// Colours selected path between 2 nodes
+    if(id==0){
+    if (count==1){
+    link.attr("color",function(d){
+     if (d.target.color) {
+            return d.target.color;  //Initially undefined. Will return steelblue
+          } else {
+            return "undefined"
+          }
+    })
+    }
+    else if(count==2){
+    d3.selectAll(".link").style("stroke", function(d) {
+          if (d.target.color) {
+            return d.target.color;  //Initially undefined. Will return steelblue
+          } else {
+            return "undefined"
+          }
+        })
+    d3.selectAll(".link").style("stroke-width", function(d) {
+          if (d.target.color == "steelblue"){
+            return 10;//if the value is set
+          }else{
+            return 1
+          }
+        })
+        }
+    }
+    if(id == 1){
+    d3.selectAll(".link").style("stroke", function(d) {
+          if (d.target.color) {
+            return d.target.color;  //Initially undefined. Will return steelblue
+          } else {
+            return "undefined"
+          }
+        })
+    d3.selectAll(".link").style("stroke-width", function(d) {
+          if (d.target.color == "steelblue"){
+            return 10;//if the value is set
+          }else{
+            return 1
+          }
+
+    })
+}
+    var commonz = d3.selectAll(".node").filter(function(d){return d == common})
+    commonz.attr("class","stroked");
+    var theNode = d3.selectAll(".node").filter(function(d){return d.color != "steelblue"});
+    theNode.attr("class","nonstroked")
+    var theLink = d3.selectAll(".link").filter(function(d){return d.target.color != "steelblue" });
+    theLink.attr("class","nonstroked")
+    var theText = d3.selectAll(".linktext").filter(function(d){return d.target.color != "steelblue"});
+    theText.attr("class","nonstroked")
+
+}
+/*-----------------------------------------------------------------------------------------*/
+function neighbourRestroke(){
+//Toggles visibility of Neighbours and non Neighbours
+if(node1.parent.name!="main-node"){
+var theNode = d3.selectAll(".node").filter(function(d) { return d == node1.parent });
+theNode.attr("class","neighbours");}
+d3.selectAll(".node").attr("class", function(d) {
+          if (d.neighbour == true) {
+            return "neighbours";  //Initially undefined. Will return steelblue
+          } else {
+            return "non-neighbours"
+          }
+        })
+
+d3.selectAll(".link").attr("class", function(d) {
+          if (d.target.neighbour == true && d.source.name!="main-node") {
+            return "neighbours";  //Initially undefined. Will return steelblue
+          } else {
+            return "non-neighbours"
+          }
+        })
+d3.selectAll(".link").attr("class", function(d) {
+          if (d.source.neighbour == true) {
+            return "neighbours";  //Initially undefined. Will return steelblue
+          } else {
+            return "non-neighbours"
+          }
+        })
+d3.selectAll(".linktext").attr("class", function(d) {
+          if (d.target.neighbour == true && d.source.name!="main-node") {
+            return "neighbours";  //Initially undefined. Will return steelblue
+          } else {
+            return "non-neighbours"
+          }
+        })
+}
+/*-----------------------------------------------------------------------------------------*/
+function search(){
+    // Search Function
+    var ipname = document.getElementById("searchInput").value;
+    var theNode = d3.selectAll(".node").filter(function(d) { return d.name === ipname });
+    theNode.select("text").transition()
+        .duration(750)
+        .attr("x", 22)
+        .style("fill", "black")
+        .style("stroke", "red")
+        .style("stroke-width", "1px")
+        .style("font", "50px sans-serif");
+    theNode.select("circle").transition()
+        .duration(750)
+        .attr("r", 50)
+}
+/*-----------------------------------------------------------------------------------------*/
+function aspect()
+{
+    var ipname = document.getElementById("singleaspect").value;
+
+    var theLinks = d3.selectAll(".link").filter(function(d) { return (d.target.type == ipname || d.source.type == ipname) && d.source.name!="main-node"});
+    theLinks.attr("class","aspected");
+    var theText = d3.selectAll(".linktext").filter(function(d) { return (d.target.type == ipname || d.source.type == ipname) && d.source.name!="main-node"});
+    theText.attr("class","links.aspected");
+
+    var xNode = d3.selectAll(".node").filter(function(d) { return d.type == ipname });
+    for(i=0;i<xNode.data().length;i++){
+        if(xNode.data()[i].parent.name!="main-node"){
+        xNode.data()[i].parent.aspected=true;}
+        if(xNode.data()[i].children){
+        var childrenz = xNode.data()[i].children;
+        childrenz.forEach(function(d){
+        d.aspected = true;
+        })}
+        }
+
+    var nodeparents = d3.selectAll(".node").filter(function(d){return d.aspected == true });
+    nodeparents.attr("class","aspected");
+
+    var theNode = d3.selectAll(".node").filter(function(d) { return d.type != ipname });
+    theNode.attr("class","nonaspected");
+
+    xNode.select("text").transition()
+        .duration(750)
+        .attr("x", 22)
+        .style("fill", "black")
+        .style("stroke", "red")
+        .style("stroke-width", "1px")
+        .style("font", "50px sans-serif");
+    xNode.select("circle").transition()
+        .duration(750)
+        .attr("r", 50)
+
+    d3.selectAll(".link")
+        .attr("class","nonaspected");
+    d3.selectAll(".linktext")
+        .attr("class","nonaspected");
+}
+/*-----------------------------------------------------------------------------------------*/
+function zoom(){
+    baseSvg.attr("transform", "translate("
+                + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+/*-----------------------------------------------------------------------------------------*/
+function rightclick(){
+    if(this.selected == true)
+    {
+        if (count!=0){
+        if(count == 2)
+            node2 = null;
+        if(count ==1)
+            node1 = null;
+        count --;
+        d3.select(this).select("circle").transition()
+        .duration(750)
+        .attr("r", 6)
+        .style("fill", "#ccc");
+        d3.select(this).select("text").transition()
+        .duration(750)
+        .attr("x", 12)
+        .style("stroke", "none")
+        .style("fill", "black")
+        .style("stroke", "none")
+        .style("font", "10px sans-serif");
+        }
+    d3.select(this)
+        .attr("class","node")
+    }
+}
+/*-----------------------------------------------------------------------------------------*/
+function path(){
+var names = [];var names2 = [];var common =[];
+    var find;
+    if(count==2){
+    find=node1;
+    while (find.parent){
+        if(find.color == "steelblue"){
+            find.color = "undefined";
+            names.push(find);
+            find=find.parent;}
+        else{
+            find.color = "steelblue";
+            names.push(find);
+            find = find.parent;}
+    }
+    find=node2;
+    while (find.parent){
+        if(find.color == "steelblue"){
+            names2.push(find);
+            find.color = "undefined";
+            find=find.parent;}
+        else{
+            names2.push(find);
+            find.color = "steelblue";
+            find = find.parent;}
+    }
+    for(i=0;i<names.length;i++)
+    {
+        for(j=0;j<names2.length;j++)
+        {
+            if(names[i]==names2[j])
+            {
+            common.push(names[i]);
+            break;
+            }
+        }
+    }
+    if(common.length==0){
+    d3.select("body").append("h1").text("No path between two trees!");
+    }
+    else{
+    restroke(0,common[0]);}}
+}
+/*-----------------------------------------------------------------------------------------*/
+function suggestions(inp){
+
+  var currentFocus;
+  //execute a function when someone writes in the text field:
+  inp.addEventListener("input", function(e) {
+      var a, b, i, val = this.value;
+
+      closeAllLists();
+      if (!val) { return false;}
+      currentFocus = -1;
+      //create a DIV element that will contain the items (values):/
+      a = document.createElement("DIV");
+      a.setAttribute("id", this.id + "autocomplete-list");
+      a.setAttribute("class", "autocomplete-items");
+      console.log(document.getElementById(this.id).offsetLeft);
+      a.setAttribute("style","margin-top:"+ document.getElementById(this.id).offsetTop+20 + "px");
+      a.setAttribute("style","margin-left:"+ document.getElementById(this.id).offsetLeft + "px");
+      //append the DIV element as a child of the autocomplete container:/
+      this.parentNode.appendChild(a);
+      //for each item in the array.../
+      for (i = 0; i < globaldata.length; i++) {
+        //check if the item starts with the same letters as the text field value:/
+        if (globaldata[i].name.slice(0, val.length).toUpperCase() == val.toUpperCase()) {
+          //create a DIV element for each matching element:/
+          b = document.createElement("DIV");
+          //make the matching letters bold:/
+          b.innerHTML = "<strong>" + globaldata[i].name.slice(0, val.length) + "</strong>";
+          b.innerHTML += globaldata[i].name.slice(val.length);
+        //insert a input field that will hold the current array item's value:/
+          b.innerHTML += "<input type='hidden' value='" + globaldata[i].name + "'>";
+          //execute a function when someone clicks on the item value (DIV element):/
+          b.addEventListener("click", function(e) {
+              //insert the value for the autocomplete text field:/
+              inp.value = this.getElementsByTagName("input")[0].value;
+              //close the list of autocompleted values,
+              //(or any other open lists of autocompleted values:/
+              closeAllLists();
+          });
+          a.appendChild(b);
+        }
+      }
+  });
+
+  function closeAllLists(elmnt) {
+    //close all autocomplete lists in the document,
+    //except the one passed as an argument:/
+    var x = document.getElementsByClassName("autocomplete-items");
+    for (var i = 0; i < x.length; i++) {
+      if (elmnt != x[i] && elmnt != inp) {
+        x[i].parentNode.removeChild(x[i]);
+      }
+    }
+  }
+  //execute a function when someone clicks in the document:/
+  document.addEventListener("click", function (e) {
+      closeAllLists(e.target);
+  });
+
+}
