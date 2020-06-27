@@ -48,9 +48,9 @@ function startx(){
     names.forEach(function(el){
         addListEntry(el," ","searchip");
     });
-    filenames.forEach(function(el){
-        addListEntry(el," ","fileip");
-    });
+    // filenames.forEach(function(el){
+    //     addListEntry(el," ","fileip");
+    // });
     types.forEach(function(el){
         addListEntry(el," ","aspectip");
     });
@@ -743,5 +743,3 @@ var select = d3.select("body")
   .attr('id','zoom_out')
   .attr("value","-")
   .on('click',zoomClick);
-
-
